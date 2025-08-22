@@ -7,9 +7,7 @@ const User = require("../../models/User");
 const { check, validationResult } = require("express-validator");
 const auth = require("../../middleware/auth");
 const PasswordReset = require("../../models/PasswordReset");
-const sgMail = require("@sendgrid/mail");
-
-const MAIL_API_KEY = process.env.MAIL_API_KEY;
+const { sendTemplateEmail } = require("../../lib/brevo");
 
 // @route   GET api/users
 router.get("/", (req, res) => {
@@ -148,23 +146,19 @@ router.post("/request-reset", async (req, res) => {
     await passwordReset.save();
     // Here you would typically send the resetNumber to the user's email
 
-    sgMail.setApiKey(MAIL_API_KEY);
-
-    const msg = {
-      to: email,
-      from: "info@codex-fze.com",
-      templateId: "d-ab6ab1f201b84ae1aedf1beb97fecca2",
-      dynamicTemplateData: {
+    await sendTemplateEmail({
+      to: user.email,
+      name: user.name,
+      templateId: 1, // replace with your Brevo template ID
+      params: {
         user_name: user.name,
         reset_code: resetNumber,
       },
-    };
-
-    await sgMail.send(msg);
+    });
 
     res.status(200).json({
       message:
-        "Password reset number generated has been sent to your registered Email ID, ",
+        "Password reset number generated has been sent to your registered Email ID, it will valid for 5 minutes.",
     });
   } catch (err) {
     console.error(err.message);
