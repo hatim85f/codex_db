@@ -7,6 +7,7 @@ const User = require("../../models/User");
 const { check, validationResult } = require("express-validator");
 const auth = require("../../middleware/auth");
 const PasswordReset = require("../../models/PasswordReset");
+const sgMail = require("@sendgrid/mail");
 
 const MAIL_API_KEY = process.env.MAIL_API_KEY;
 
