@@ -141,8 +141,6 @@ router.post("/request-reset", async (req, res) => {
 
     const resetNumber = Math.floor(100000 + Math.random() * 900000).toString();
 
-    return res.status(200).json({ resetNumber });
-
     const passwordReset = new PasswordReset({
       userId: user._id,
       resetNumber,
