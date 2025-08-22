@@ -26,7 +26,7 @@ router.post("/register", async (req, res) => {
   }
 
   // check if email is not unique
-  const userByUserName = User.findOne({ userName });
+  const userByUserName = await User.findOne({ userName });
   if (userByUserName)
     return res.status(400).json({ message: "UserName already exists" });
 
