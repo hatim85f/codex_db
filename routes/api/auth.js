@@ -15,8 +15,6 @@ router.get("/", (req, res) => {
 router.post("/register", async (req, res) => {
   const { name, email, password, userName, role } = req.body;
 
-  return res.status(200).send({ name, email, password, userName, role });
-
   // Simple validation
   if (!name || !email || !password || !userName) {
     return res.status(400).json({ message: "Please enter all fields" });
