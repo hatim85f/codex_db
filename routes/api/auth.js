@@ -122,7 +122,27 @@ router.post("/request-reset", async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    // check if the same user requested a reset number in the last 5 minutes
+    const recentReset = await PasswordReset.findOne({
+      userId: user._id,
+      isExpired: false,
+      createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) },
+    });
+
+    // if a recent reset exists, do not allow another request
+    // this prevents spamming the reset request
+    if (recentReset) {
+      return res.status(400).json({
+        message:
+          "A password reset request has already been made recently. Please wait before requesting a new one.",
+      });
+    }
+
     const resetNumber = Math.floor(100000 + Math.random() * 900000).toString();
+
+    return res.status(200).json({ resetNumber });
+
     const passwordReset = new PasswordReset({
       userId: user._id,
       resetNumber,
@@ -138,7 +158,7 @@ router.post("/request-reset", async (req, res) => {
       templateId: "d-ab6ab1f201b84ae1aedf1beb97fecca2",
       dynamicTemplateData: {
         user_name: user.name,
-        reset_number: resetNumber,
+        reset_code: resetNumber,
       },
     };
 
