@@ -48,6 +48,10 @@ const UserSchema = Schema(
       type: Date,
       default: Date.now,
     },
+    profilePicture: {
+      type: String,
+      default: null,
+    },
     isActive: { type: Boolean, default: true },
     pushTokens: { type: [PushTokenSchema], default: [] },
   },

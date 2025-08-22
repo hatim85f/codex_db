@@ -8,13 +8,14 @@ const { check, validationResult } = require("express-validator");
 const auth = require("../../middleware/auth");
 const PasswordReset = require("../../models/PasswordReset");
 const { sendTemplateEmail } = require("../../lib/brevo");
+const isAdmin = require("../../middleware/isAdmin");
 
 // @route   GET api/users
 router.get("/", (req, res) => {
   return res.status(200).send({ message: "Auth route is working" });
 });
 
-router.post("/register", auth, async (req, res) => {
+router.post("/register", auth, isAdmin, async (req, res) => {
   const { name, email, password, userName, role } = req.body;
 
   // Simple validation
@@ -161,8 +162,104 @@ router.post("/request-reset", async (req, res) => {
         "Password reset number generated has been sent to your registered Email ID, it will valid for 5 minutes.",
     });
   } catch (err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+//@eouter PUT
+// changing password using the reset number and checking if it is valid
+router.put("/reset-password", async (req, res) => {
+  const { email, resetNumber, newPassword } = req.body;
+
+  if (!email || !resetNumber || !newPassword) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const passwordReset = await PasswordReset.findOne({
+      userId: user._id,
+      resetNumber,
+      isExpired: false,
+      createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) }, // valid for 5 minutes
+    });
+
+    if (!passwordReset) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset number" });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = passwordHash;
+    await user.save();
+
+    // Mark the reset number as expired
+    await PasswordReset.deleteOne({ _id: passwordReset._id });
+
+    res.status(200).json({ message: "Password has been reset successfully" });
+  } catch (err) {
     console.error(err.message);
-    res.status(500).send(err.message);
+    res.status(500).send("Server error");
+  }
+});
+
+router.put("/change-password/:id", auth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const { id } = req.params;
+
+  // basic validation
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+  if (!mongoose.isValidObjectId(id)) {
+    return res.status(400).json({ message: "Invalid user id" });
+  }
+
+  // authorization: self or admin/manager
+  const isSelf = String(req.user.id) === String(id);
+  const adminRoles = new Set(["owner", "manager", "admin"]);
+  const isAdminLike = adminRoles.has(req.user.role);
+  if (!isSelf && !isAdminLike) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+
+  try {
+    // if admin is changing someone else's password, you may choose to skip currentPassword check.
+    // Here we enforce it unless requester is admin-like and NOT self:
+    const user = await User.findOne({ _id: id }).select("+passwordHash");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (isSelf || !isAdminLike) {
+      const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!ok)
+        return res.status(400).json({ message: "Old password is incorrect" });
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return res
+      .status(200)
+      .json({ message: "Password has been changed successfully" });
+  } catch (error) {
+    console.error("change-password error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.delete("/delete-user/:id", auth, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    await User.deleteOne({ _id: userId });
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
   }
 });
 

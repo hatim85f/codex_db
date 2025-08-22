@@ -8,8 +8,16 @@ const { check, validationResult } = require("express-validator");
 const auth = require("../../middleware/auth");
 
 // @route   GET api/users
-router.get("/", (req, res) => {
-  return res.status(200).send({ message: "Users route is working" });
+router.get("/:id", async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const user = await User.findOne({ _id: userId }).select("-passwordHash");
+
+    return res.status(200).json(user);
+  } catch (error) {
+    return res.status(500).json({ message: "Server error" });
+  }
 });
 
 module.exports = router;
