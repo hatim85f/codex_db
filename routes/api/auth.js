@@ -160,7 +160,7 @@ router.post("/request-reset", async (req, res) => {
       },
     };
 
-    sgMail.send(msg);
+    await sgMail.send(msg);
 
     res.status(200).json({
       message:
