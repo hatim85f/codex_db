@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/hatim85f/codex_db#readme",
   "dependencies": {
+    "@sendgrid/mail": "^8.1.5",
     "bcryptjs": "^3.0.2",
     "config": "^3.3.12",
     "cors": "^2.8.5",
