@@ -30,6 +30,7 @@ const UserSchema = Schema(
     passwordHash: {
       type: String,
       required: true,
+      select: false,
     },
     userName: {
       type: String,

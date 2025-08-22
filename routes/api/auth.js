@@ -20,23 +20,17 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ message: "Please enter all fields" });
   }
 
-  // Check for existing user
-  const user = User.findOne({ email });
-
-  if (user) return res.status(400).json({ message: "User already exists" });
+  const userByEmail = await User.findOne({ email });
+  if (userByEmail) {
+    return res.status(400).json({ message: "Email already exists" });
+  }
 
   // check if email is not unique
   const userByUserName = User.findOne({ userName });
   if (userByUserName)
     return res.status(400).json({ message: "UserName already exists" });
 
-  const userByEmail = User.findOne({ email });
-  if (userByEmail)
-    return res.status(400).json({ message: "Email already exists" });
-
-  const passwordHash = bcrypt.hash(password, 10);
-
-  const userToken = jwt.sign({ id: user.id }, config.get("jwtSecret"), {});
+  const passwordHash = await bcrypt.hash(password, 10);
 
   const newUser = new User({
     name,
@@ -45,6 +39,8 @@ router.post("/register", async (req, res) => {
     userName,
     role,
   });
+
+  const userToken = jwt.sign({ id: newUser._id }, config.get("jwtSecret"), {});
 
   await User.insertMany(newUser);
   res.status(200).send({
