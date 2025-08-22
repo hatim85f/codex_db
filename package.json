@@ -4,7 +4,8 @@
   "description": "Database for the CRM of Codex Technology",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server",
+    "server": "nodemon server"
   },
   "repository": {
     "type": "git",
@@ -23,9 +24,11 @@
     "bcryptjs": "^3.0.2",
     "config": "^3.3.12",
     "cors": "^2.8.5",
+    "express": "^5.1.0",
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.2",
+    "process": "^0.11.10",
     "request": "^2.88.2"
   },
   "devDependencies": {
