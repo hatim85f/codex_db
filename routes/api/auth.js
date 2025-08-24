@@ -168,43 +168,57 @@ router.post("/request-reset", async (req, res) => {
 
 //@eouter PUT
 // changing password using the reset number and checking if it is valid
-router.put("/reset-password", async (req, res) => {
-  const { email, resetNumber, newPassword } = req.body;
+router.put("/change-password/:id", auth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const { id } = req.params;
 
-  if (!email || !resetNumber || !newPassword) {
+  if (!currentPassword || !newPassword) {
     return res.status(400).json({ message: "All fields are required" });
+  }
+  if (!mongoose.isValidObjectId(id)) {
+    return res.status(400).json({ message: "Invalid user id" });
+  }
+
+  const isSelf = String(req.user.id) === String(id);
+  const adminRoles = new Set(["owner", "manager"]); // keep in sync with your enum
+  const isAdminLike = adminRoles.has(req.user.role);
+  if (!isSelf && !isAdminLike) {
+    return res.status(403).json({ message: "Forbidden" });
   }
 
   try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const user = await User.findOne({ _id: id }).select("+passwordHash");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Require current password for self or non-admins
+    if (isSelf || !isAdminLike) {
+      const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!ok)
+        return res.status(400).json({ message: "Old password is incorrect" });
     }
 
-    const passwordReset = await PasswordReset.findOne({
-      userId: user._id,
-      resetNumber,
-      isExpired: false,
-      createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) }, // valid for 5 minutes
-    });
-
-    if (!passwordReset) {
+    if (newPassword.length < 8) {
       return res
         .status(400)
-        .json({ message: "Invalid or expired reset number" });
+        .json({ message: "New password must be at least 8 characters" });
     }
+    const same = await bcrypt.compare(newPassword, user.passwordHash);
+    if (same)
+      return res
+        .status(400)
+        .json({
+          message: "New password must be different from current password",
+        });
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    user.passwordHash = passwordHash;
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    // Mark the reset number as expired
-    await PasswordReset.deleteOne({ _id: passwordReset._id });
-
-    res.status(200).json({ message: "Password has been reset successfully" });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server error");
+    return res
+      .status(200)
+      .json({ message: "Password has been changed successfully" });
+  } catch (error) {
+    console.error("change-password error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 });
 

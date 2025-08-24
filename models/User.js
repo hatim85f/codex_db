@@ -16,6 +16,10 @@ const PushTokenSchema = new Schema(
 
 const UserSchema = Schema(
   {
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "company",
+    },
     name: {
       type: String,
       required: true,
@@ -40,7 +44,7 @@ const UserSchema = Schema(
     },
     role: {
       type: String,
-      enum: ["owner", "manager", "agent", "viewer", "finance", "user"],
+      enum: ["owner", "manager", "agent", "viewer", "finance", "user", "admin"],
       default: "user",
       index: true,
     },
