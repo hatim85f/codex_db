@@ -29,6 +29,7 @@ router.post("/confirm-email", async (req, res) => {
     const emailProvider = email.split("@")[1];
     if (emailProvider === "gmail.com" || emailProvider === "yahoo.com") {
       return res.status(400).json({
+        error: "Error!",
         message: "You can not create with a general email provider",
       });
     }
@@ -38,6 +39,7 @@ router.post("/confirm-email", async (req, res) => {
     // check if there's an existing confirmation and if it's not expired (assuming 15 minutes expiry)
     if (existingConfirmation) {
       return res.status(400).json({
+        error: "Error!",
         message:
           "A confirmation code has already been sent to this email. Please check your inbox.",
       });
@@ -74,7 +76,7 @@ router.post("/confirm-email", async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "An error occurred, please try again later.",
-      error: error.message,
+      error: "Error!",
     });
   }
 });
@@ -95,9 +97,10 @@ router.post("/create", async (req, res) => {
   } = req.body;
   try {
     if (!confirmationCode || !address || !phone || !domain) {
-      return res
-        .status(400)
-        .json({ message: "Please provide all required fields" });
+      return res.status(400).json({
+        error: "Error!",
+        message: "Please provide all required fields",
+      });
     }
 
     const confirmation = await CompanyConfirmation.findOne({
@@ -106,9 +109,10 @@ router.post("/create", async (req, res) => {
     });
 
     if (!confirmation) {
-      return res
-        .status(400)
-        .json({ message: "Invalid or expired confirmation code" });
+      return res.status(400).json({
+        error: "Error!",
+        message: "Invalid or expired confirmation code",
+      });
     }
 
     const existingCompany = await Company.findOne({
@@ -129,6 +133,7 @@ router.post("/create", async (req, res) => {
     const isUserNameTaken = await User.findOne({ userName: ownerUserName });
     if (isUserNameTaken) {
       return res.status(400).json({
+        error: "Error!",
         message: "This username is already taken, please choose another one.",
       });
     }
@@ -200,7 +205,7 @@ router.post("/create", async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "An error occurred, please try again later.",
-      error: error.message,
+      error: "Error!",
     });
   }
 });
