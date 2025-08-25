@@ -37,16 +37,10 @@ router.post("/confirm-email", async (req, res) => {
 
     // check if there's an existing confirmation and if it's not expired (assuming 15 minutes expiry)
     if (existingConfirmation) {
-      const now = new Date();
-      const createdAt = new Date(existingConfirmation.createdAt);
-      const diffInMinutes = (now - createdAt) / (1000 * 60);
-
-      if (diffInMinutes < 15 && !existingConfirmation.isExpired) {
-        return res.status(400).json({
-          message:
-            "A confirmation code has already been sent to this email. Please check your inbox.",
-        });
-      }
+      return res.status(400).json({
+        message:
+          "A confirmation code has already been sent to this email. Please check your inbox.",
+      });
     }
 
     const emailConfirmationCode = Math.floor(
@@ -75,6 +69,7 @@ router.post("/confirm-email", async (req, res) => {
 
     return res.status(200).json({
       message: `A confirmation code has been sent to ${email}. Please check your inbox.`,
+      canNavigate: true,
     });
   } catch (error) {
     return res.status(500).json({
